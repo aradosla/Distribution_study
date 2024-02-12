@@ -90,20 +90,29 @@ config_collider:
       ip5: 25
       ip8: 20
     sigma_z: 0.09
-    num_particles_per_bunch: 1.15e11
+    num_particles_per_bunch: 179996390423.73035
     nemitt_x: 2.2e-6
     nemitt_y: 2.2e-6
     mask_with_filling_pattern:
-      pattern_fname: ../filling_scheme/25ns_2228b_2216_1686_2112_hybrid_8b4e_2x56b_25ns_3x48b_12inj.json
-      i_bunch_b1: 1963 # If not specified, the bunch with the worst schedule is chosen
-      i_bunch_b2: 1963 # Same. A value for i_bunch_b1 and i_bunch_b2 must be specified if pattern_fname is specified
+      pattern_fname: ../filling_scheme/25ns_2464b_2452_1842_1821_236bpi_12inj_hybrid_converted.json
+      i_bunch_b1: 411 # If not specified, the bunch with the worst schedule is chosen
+      i_bunch_b2: 410 # Same. A value for i_bunch_b1 and i_bunch_b2 must be specified if pattern_fname is specified
 
+    num_particles_per_bunch_before_optimization: 179996390423.73035
+    luminosity_ip1_after_optimization: 1.6718780179103034e+34
+    Pile-up_ip1_after_optimization: 49.11231363083242
+    luminosity_ip2_after_optimization: 3.745367355114256e+30
+    Pile-up_ip2_after_optimization: 0.01464573146587375
+    luminosity_ip5_after_optimization: 1.6399864854100127e+34
+    Pile-up_ip5_after_optimization: 48.17548275588626
+    luminosity_ip8_after_optimization: 2.03243279484505e+32
+    Pile-up_ip8_after_optimization: 0.8039194204861705
   config_lumi_leveling_ip1_5:
     skip_leveling: false
     luminosity: 2.0e+34
-    num_colliding_bunches: null # This will be set automatically according to the filling scheme
+    num_colliding_bunches: 2452 # This will be set automatically according to the filling scheme
     vary:
-      - num_particles_per_bunch
+    - num_particles_per_bunch
     constraints:
       max_intensity: 1.8e11
       max_PU: 70
@@ -112,81 +121,86 @@ config_collider:
   config_lumi_leveling:
     ip2:
       separation_in_sigmas: 5
-      plane: "x"
+      plane: x
       impose_separation_orthogonal_to_crossing: false
       knobs:
-        - on_sep2h
-        - on_sep2v
+      - on_sep2h
+      - on_sep2v
       bump_range:
         lhcb1:
-          - e.ds.l2.b1
-          - s.ds.r2.b1
+        - e.ds.l2.b1
+        - s.ds.r2.b1
         lhcb2:
-          - s.ds.r2.b2
-          - e.ds.l2.b2
+        - s.ds.r2.b2
+        - e.ds.l2.b2
       preserve_angles_at_ip: true
       preserve_bump_closure: true
       corrector_knob_names:
         # to preserve angles at ip
-        - corr_co_acbyvs4.l2b1
-        - corr_co_acbyhs4.l2b1
-        - corr_co_acbyvs4.r2b2
-        - corr_co_acbyhs4.r2b2
+      - corr_co_acbyvs4.l2b1
+      - corr_co_acbyhs4.l2b1
+      - corr_co_acbyvs4.r2b2
+      - corr_co_acbyhs4.r2b2
         # to close the bumps
-        - corr_co_acbyvs4.l2b2
-        - corr_co_acbyhs4.l2b2
-        - corr_co_acbyvs4.r2b1
-        - corr_co_acbyhs4.r2b1
-        - corr_co_acbyhs5.l2b2
-        - corr_co_acbyvs5.l2b2
-        - corr_co_acbchs5.r2b1
-        - corr_co_acbcvs5.r2b1
+      - corr_co_acbyvs4.l2b2
+      - corr_co_acbyhs4.l2b2
+      - corr_co_acbyvs4.r2b1
+      - corr_co_acbyhs4.r2b1
+      - corr_co_acbyhs5.l2b2
+      - corr_co_acbyvs5.l2b2
+      - corr_co_acbchs5.r2b1
+      - corr_co_acbcvs5.r2b1
 
+      num_colliding_bunches: 1842
+      final_on_sep2h: 0.13790479098328523
+      final_on_sep2v: 1.7032364707697348e-09
     ip8:
       luminosity: 2.0e+32
-      num_colliding_bunches: null # This will be set automatically according to the filling scheme
+      num_colliding_bunches: 1821 # This will be set automatically according to the filling scheme
       impose_separation_orthogonal_to_crossing: true
       knobs:
-        - on_sep8h
-        - on_sep8v
+      - on_sep8h
+      - on_sep8v
       constraints:
-        - x_lhcb1_<_0_ip8
+      - x_lhcb1_<_0_ip8
       # - x_lhcb2_>_0_ip8
       # - y_lhcb1_>_0_ip8
       # - y_lhcb2_<_0_ip8
       bump_range:
         lhcb1:
-          - e.ds.l8.b1
-          - s.ds.r8.b1
+        - e.ds.l8.b1
+        - s.ds.r8.b1
         lhcb2:
-          - s.ds.r8.b2
-          - e.ds.l8.b2
+        - s.ds.r8.b2
+        - e.ds.l8.b2
       preserve_angles_at_ip: true
       preserve_bump_closure: true
       corrector_knob_names:
         # to preserve angles at ip
-        - corr_co_acbyvs4.l8b1
-        - corr_co_acbyhs4.l8b1
-        - corr_co_acbyvs4.r8b2
-        - corr_co_acbyhs4.r8b2
+      - corr_co_acbyvs4.l8b1
+      - corr_co_acbyhs4.l8b1
+      - corr_co_acbyvs4.r8b2
+      - corr_co_acbyhs4.r8b2
         # to close the bumps
-        - corr_co_acbyvs4.l8b2
-        - corr_co_acbyhs4.l8b2
-        - corr_co_acbyvs4.r8b1
-        - corr_co_acbyhs4.r8b1
-        - corr_co_acbcvs5.l8b2
-        - corr_co_acbchs5.l8b2
-        - corr_co_acbyvs5.r8b1
-        - corr_co_acbyhs5.r8b1
+      - corr_co_acbyvs4.l8b2
+      - corr_co_acbyhs4.l8b2
+      - corr_co_acbyvs4.r8b1
+      - corr_co_acbyhs4.r8b1
+      - corr_co_acbcvs5.l8b2
+      - corr_co_acbchs5.l8b2
+      - corr_co_acbyvs5.r8b1
+      - corr_co_acbyhs5.r8b1
 
 # Configuration for the track job
+      final_on_sep8h: -0.03788465054374935
+      final_on_sep8v: 0.02607977403040321
 config_simulation:
   # Collider file
   collider_file: ../1_build_distr_and_collider/collider/collider.json
 
   # Distribution in the normalized xy space
-  particle_file: ../1_build_distr_and_collider/particles/00.parquet
-
+  #particle_file: ../1_build_distr_and_collider/particles/00.parquet
+  particle_file: /afs/cern.ch/user/a/aradosla/Noise_framework/Tutorial/examples/particles/00.parquet
   # Initial off-momentum
   delta_max: 27.e-5
 
@@ -194,14 +208,15 @@ config_simulation:
   n_turns: 1000 # number of turns to track
 
   # Beam to track
-  beam: "lhcb1" #lhcb1 or lhcb2
+  beam: lhcb1   #lhcb1 or lhcb2
 
 # Save collider or not
-dump_collider: false
+#dump_collider: false
+dump_collider: true
 dump_config_in_collider: false
 
 # Context for the simulation
-context: "cpu" # 'cupy' # opencl
+context: cpu   # 'cupy' # opencl
 
 # Log
 log_file: tree_maker.log

@@ -1,10 +1,10 @@
 """This script is used to build the base collider with Xmask, configuring only the optics. Functions
 in this script are called sequentially."""
-
+# %%
 # ==================================================================================================
 # --- Imports
 # ==================================================================================================
-
+# %%
 # Import standard library modules
 import itertools
 import json
@@ -67,7 +67,7 @@ def load_configuration(config_path="config.yaml"):
 
     return configuration, config_particles, config_mad
 
-
+'''
 # ==================================================================================================
 # --- Function to build particle distribution and write it to file
 # ==================================================================================================
@@ -109,7 +109,7 @@ def write_particle_distribution(particle_list):
             columns=["particle_id", "normalized amplitude in xy-plane", "angle in xy-plane [deg]"],
         ).to_parquet(f"{distributions_folder}/{idx_chunk:02}.parquet")
 
-
+''' 
 # ==================================================================================================
 # --- Function to build collider from mad model
 # ==================================================================================================
@@ -221,10 +221,10 @@ def build_distr_and_collider(config_file="config.yaml"):
     tree_maker_tagging(configuration, tag="started")
 
     # Build particle distribution
-    particle_list = build_particle_distribution(config_particles)
+    #particle_list = build_particle_distribution(config_particles)
 
     # Write particle distribution to file
-    write_particle_distribution(particle_list)
+    #write_particle_distribution(particle_list)
 
     # Build collider from mad model
     collider = build_collider_from_mad(config_mad, context, sanity_checks)
@@ -249,3 +249,5 @@ def build_distr_and_collider(config_file="config.yaml"):
 
 if __name__ == "__main__":
     build_distr_and_collider()
+
+# %%

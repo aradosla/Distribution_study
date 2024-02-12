@@ -2,7 +2,7 @@
 are called sequentially, in the order in which they are defined. Modularity has been favored over 
 simple scripting for reproducibility, to allow rebuilding the collider from a different program 
 (e.g. dahsboard)."""
-
+# %%
 # ==================================================================================================
 # --- Imports
 # ==================================================================================================
@@ -427,7 +427,8 @@ def configure_collider(
     config,
     config_mad,
     context,
-    save_collider=False,
+    save_collider=True,
+    #save_collider=False,
     save_config=False,
     return_collider_before_bb=False,
     config_path="config.yaml",
@@ -457,7 +458,7 @@ def configure_collider(
     collider = match_tune_and_chroma(
         collider, conf_knobs_and_tuning, match_linear_coupling_to_zero=True
     )
-
+ 
     # Compute the number of collisions in the different IPs
     (
         n_collisions_ip1_and_5,
@@ -559,12 +560,41 @@ def prepare_particle_distribution(collider, context, config_sim, config_bb):
         x_norm=A1_in_sigma,
         y_norm=A2_in_sigma,
         delta=config_sim["delta_max"],
-        scale_with_transverse_norm_emitt=(config_bb["nemitt_x"], config_bb["nemitt_y"]),
+        scale_with_transverse_norm_emitt=(config_bb["nemitt_x"], config_bb["nemitt_y"]),       # here you change the distribution to the matching Gaussian 
         _context=context,
     )
 
     particle_id = particle_df.particle_id.values
     return particles, particle_id
+
+
+# ==================================================================================================
+# Function for reading of the distribution
+# ==================================================================================================
+def prepare_particle_distributio_new(collider, context, config_sim, config_bb):
+    beam = config_sim["beam"]
+
+    particle_df = pd.read_parquet(config_sim["particle_file"])
+
+    #A1_in_sigma = r_vect * np.cos(theta_vect)
+    #A2_in_sigma = r_vect * np.sin(theta_vect)
+    N_particles = 10000
+    bunch_intensity = 2.2e11
+    normal_emitt_x = 2.5e-6 #m*rad
+    normal_emitt_y = 2.5e-6 #m*rad
+    sigma_z = 7.5e-2 
+    particle_ref = xp.Particles(
+                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=7000e9)
+    gaussian_bunch = xp.generate_matched_gaussian_bunch(
+            num_particles = N_particles, total_intensity_particles = bunch_intensity,
+            nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
+            particle_ref = particle_ref,
+            line = collider['beam'])
+
+
+    particle_id = particle_df.particle_id.values
+    return particles, particle_id
+
 
 
 # ==================================================================================================
@@ -579,12 +609,12 @@ def track(collider, particles, config_sim, save_input_particles=False):
 
     # Save initial coordinates if requested
     if save_input_particles:
-        pd.DataFrame(particles.to_dict()).to_parquet("input_particles.parquet")
+        pd.DataFrame(particles.to_dict()).to_parquet("input_particles.parquet")              # here save the initial distribution
 
     # Track
     num_turns = config_sim["n_turns"]
     a = time.time()
-    collider[beam].track(particles, turn_by_turn_monitor=False, num_turns=num_turns)
+    collider[beam].track(particles, turn_by_turn_monitor=False, num_turns=num_turns)         # tracking of the distribution 
     b = time.time()
 
     print(f"Elapsed time: {b-a} s")
@@ -651,3 +681,5 @@ def configure_and_track(config_path="config.yaml"):
 
 if __name__ == "__main__":
     configure_and_track()
+
+# %%
