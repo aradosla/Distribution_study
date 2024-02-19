@@ -542,58 +542,36 @@ def configure_collider(
         return collider, config_sim, config_bb
 
 
-# ==================================================================================================
-# --- Function to prepare particles distribution for tracking
-# ==================================================================================================
-def prepare_particle_distribution(collider, context, config_sim, config_bb):
-    beam = config_sim["beam"]
-
-    particle_df = pd.read_parquet(config_sim["particle_file"])
-
-    r_vect = particle_df["normalized amplitude in xy-plane"].values
-    theta_vect = particle_df["angle in xy-plane [deg]"].values * np.pi / 180  # [rad]
-
-    A1_in_sigma = r_vect * np.cos(theta_vect)
-    A2_in_sigma = r_vect * np.sin(theta_vect)
-
-    particles = collider[beam].build_particles(
-        x_norm=A1_in_sigma,
-        y_norm=A2_in_sigma,
-        delta=config_sim["delta_max"],
-        scale_with_transverse_norm_emitt=(config_bb["nemitt_x"], config_bb["nemitt_y"]),       # here you change the distribution to the matching Gaussian 
-        _context=context,
-    )
-
-    particle_id = particle_df.particle_id.values
-    return particles, particle_id
-
 
 # ==================================================================================================
 # Function for reading of the distribution
 # ==================================================================================================
-def prepare_particle_distributio_new(collider, context, config_sim, config_bb):
+
+def prepare_particle_distribution(collider, context, config_sim):
     beam = config_sim["beam"]
 
+    #particle_df = pd.read_parquet(config_sim["particle_file"])
     particle_df = pd.read_parquet(config_sim["particle_file"])
 
-    #A1_in_sigma = r_vect * np.cos(theta_vect)
-    #A2_in_sigma = r_vect * np.sin(theta_vect)
-    N_particles = 10000
-    bunch_intensity = 2.2e11
-    normal_emitt_x = 2.5e-6 #m*rad
-    normal_emitt_y = 2.5e-6 #m*rad
-    sigma_z = 7.5e-2 
-    particle_ref = xp.Particles(
-                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=7000e9)
-    gaussian_bunch = xp.generate_matched_gaussian_bunch(
-            num_particles = N_particles, total_intensity_particles = bunch_intensity,
-            nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
-            particle_ref = particle_ref,
-            line = collider['beam'])
+    print(particle_df.x)
+
+
+    particles = collider[beam].build_particles(
+        x=particle_df.x.values,
+        y=particle_df.y.values,
+        px = particle_df.px.values,
+        py = particle_df.py.values,
+        zeta = particle_df.zeta.values,
+        delta=particle_df.delta.values,
+        _context=context,
+    )
 
 
     particle_id = particle_df.particle_id.values
+
     return particles, particle_id
+
+#particles, particle_id = prepare_particle_distribution(collider,ctx, 'particles_new/00.parquet', 'lhcb1')
 
 
 
@@ -609,7 +587,7 @@ def track(collider, particles, config_sim, save_input_particles=False):
 
     # Save initial coordinates if requested
     if save_input_particles:
-        pd.DataFrame(particles.to_dict()).to_parquet("input_particles.parquet")              # here save the initial distribution
+        pd.DataFrame(particles.to_dict()).to_parquet("input_particles_new.parquet")              # here save the initial distribution
 
     # Track
     num_turns = config_sim["n_turns"]
@@ -652,7 +630,7 @@ def configure_and_track(config_path="config.yaml"):
         collider.build_trackers(_context=context)
 
     # Prepare particle distribution
-    particles, particle_id = prepare_particle_distribution(collider, context, config_sim, config_bb)
+    particles, particle_id = prepare_particle_distribution(collider, context, config_sim)
 
     # Track
     particles = track(collider, particles, config_sim)
@@ -662,7 +640,7 @@ def configure_and_track(config_path="config.yaml"):
     particles_dict["particle_id"] = particle_id
 
     # Save output
-    pd.DataFrame(particles_dict).to_parquet("output_particles.parquet")
+    pd.DataFrame(particles_dict).to_parquet("output_particles_new.parquet")
 
     # Remote the correction folder, and potential C files remaining
     try:

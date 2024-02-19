@@ -1,3 +1,6 @@
+# %%
+
+
 # ==================================================================================================
 # --- Imports
 # ==================================================================================================
@@ -143,3 +146,5 @@ my_final.to_parquet(f"scans/{study_name}/da.parquet")
 print("Final dataframe for current set of simulations: ", my_final)
 end = time.time()
 print("Elapsed time: ", end - start)
+
+# %%

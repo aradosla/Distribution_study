@@ -12,7 +12,9 @@ then
     source $FILE
 # Activate miniforge from afs
 else
-    source $SCRIPT_DIR/miniforge/bin/activate
+    #source $SCRIPT_DIR/miniforge/bin/activate
+    source /afs/cern.ch/work/a/aradosla/private/miniforge3/bin/activate
+
 fi
 
 

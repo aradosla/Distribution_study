@@ -20,12 +20,13 @@ import optics_specific_tools as ost
 import pandas as pd
 import tree_maker
 import xmask as xm
+import xpart as xp
 import xmask.lhc as xlhc
 import xobjects as xo
 import yaml
 from cpymad.madx import Madx
 
-
+#%%
 # ==================================================================================================
 # --- Function for tree_maker tagging
 # ==================================================================================================
@@ -67,49 +68,67 @@ def load_configuration(config_path="config.yaml"):
 
     return configuration, config_particles, config_mad
 
-'''
-# ==================================================================================================
-# --- Function to build particle distribution and write it to file
-# ==================================================================================================
-def build_particle_distribution(config_particles):
+
+# START NEW
+
+def build_particle_distribution(config_particles, collider):
     # Define radius distribution
-    r_min = config_particles["r_min"]
-    r_max = config_particles["r_max"]
-    n_r = config_particles["n_r"]
-    radial_list = np.linspace(r_min, r_max, n_r, endpoint=False)
+    #r_min = config_particles["r_min"]
+    #r_max = config_particles["r_max"]
+    #n_r = config_particles["n_r"]
+    #radial_list = np.linspace(r_min, r_max, n_r, endpoint=False)
 
     # Filter out particles with low and high amplitude to accelerate simulation
     # radial_list = radial_list[(radial_list >= 4.5) & (radial_list <= 7.5)]
 
     # Define angle distribution
-    n_angles = config_particles["n_angles"]
-    theta_list = np.linspace(0, 90, n_angles + 2)[1:-1]
+    #n_angles = config_particles["n_angles"]
+    #theta_list = np.linspace(0, 90, n_angles + 2)[1:-1]
+    N_particles = 10000
 
+
+    bunch_intensity = 2.2e11
+    normal_emitt_x = 2.5e-6 #m*rad
+    normal_emitt_y = 2.5e-6 #m*rad
+    sigma_z = 7.5e-2 
+    particle_ref = xp.Particles(
+                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=7000e9)
+    gaussian_bunch = xp.generate_matched_gaussian_bunch(
+            num_particles = N_particles, total_intensity_particles = bunch_intensity,
+            nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
+            particle_ref = particle_ref,
+            line = collider['lhcb1'])
     # Define particle distribution as a cartesian product of the above
     particle_list = [
-        (particle_id, ii[1], ii[0])
-        for particle_id, ii in enumerate(itertools.product(theta_list, radial_list))
+        (particle_id, x, y, px, py, zeta, delta)
+        for particle_id, (x, y, px, py, zeta, delta) in enumerate(zip(gaussian_bunch.x, gaussian_bunch.y, gaussian_bunch.px, gaussian_bunch.py, gaussian_bunch.zeta, gaussian_bunch.delta))
     ]
-
+    print('first',particle_list)
     # Split distribution into several chunks for parallelization
-    n_split = config_particles["n_split"]
-    particle_list = list(np.array_split(particle_list, n_split))
+    n_split = config_particles['n_split']
+    particle_list = np.array(np.array_split(particle_list, n_split))
+    array_of_lists = np.array([arr.tolist() for arr in particle_list])
+    particle_list = array_of_lists
+    print('second',particle_list)
 
     # Return distribution
     return particle_list
 
-
 def write_particle_distribution(particle_list):
     # Write distribution to parquet files
-    distributions_folder = "particles"
+    distributions_folder = "particles_new"
     os.makedirs(distributions_folder, exist_ok=True)
     for idx_chunk, my_list in enumerate(particle_list):
         pd.DataFrame(
             my_list,
-            columns=["particle_id", "normalized amplitude in xy-plane", "angle in xy-plane [deg]"],
+            columns=["particle_id", "x", "y", "px", "py", "zeta", "delta"],
         ).to_parquet(f"{distributions_folder}/{idx_chunk:02}.parquet")
 
-''' 
+
+
+# END NEW
+
+
 # ==================================================================================================
 # --- Function to build collider from mad model
 # ==================================================================================================
@@ -220,18 +239,21 @@ def build_distr_and_collider(config_file="config.yaml"):
     # Tag start of the job
     tree_maker_tagging(configuration, tag="started")
 
-    # Build particle distribution
-    #particle_list = build_particle_distribution(config_particles)
-
-    # Write particle distribution to file
-    #write_particle_distribution(particle_list)
+    
+    
 
     # Build collider from mad model
     collider = build_collider_from_mad(config_mad, context, sanity_checks)
 
     # Twiss to ensure eveyrthing is ok
     collider = activate_RF_and_twiss(collider, config_mad, context, sanity_checks)
+    
+    # Build particle distribution
+    particle_list = build_particle_distribution(config_particles, collider)
 
+    # Write particle distribution to file
+    write_particle_distribution(particle_list)
+    
     # Clean temporary files
     clean()
 

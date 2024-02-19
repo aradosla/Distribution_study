@@ -200,12 +200,12 @@ config_simulation:
 
   # Distribution in the normalized xy space
   #particle_file: ../1_build_distr_and_collider/particles/00.parquet
-  particle_file: /afs/cern.ch/user/a/aradosla/Noise_framework/Tutorial/examples/particles/00.parquet
+  particle_file: /afs/cern.ch/user/a/aradosla/example_DA_study_mine/master_study/master_jobs/1_build_distr_and_collider/particles_new/00.parquet
   # Initial off-momentum
   delta_max: 27.e-5
 
   # Tracking
-  n_turns: 1000 # number of turns to track
+  n_turns: 100 # number of turns to track
 
   # Beam to track
   beam: lhcb1   #lhcb1 or lhcb2

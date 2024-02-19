@@ -1,3 +1,5 @@
+
+# %%
 # ==================================================================================================
 # --- Imports
 # ==================================================================================================
@@ -17,7 +19,7 @@ from user_defined_functions import (
     get_worst_bunch,
     reformat_filling_scheme_from_lpc_alt,
 )
-
+# %%
 # ==================================================================================================
 # --- Initial particle distribution parameters (generation 1)
 #
@@ -57,7 +59,8 @@ d_config_mad = {"beam_config": {"lhcb1": {}, "lhcb2": {}}, "links": {}}
 
 ### For run III
 d_config_mad["links"]["acc-models-lhc"] = "/afs/cern.ch/eng/lhc/optics/runIII"
-d_config_mad["optics_file"] = "acc-models-lhc/RunIII_dev/Proton_2024/V0/opticsfile.40"
+#d_config_mad["optics_file"] = "acc-models-lhc/RunIII_dev/Proton_2024/V0/opticsfile.40"
+d_config_mad["optics_file"] = "/afs/cern.ch/eng/lhc/optics/runIII/RunIII_dev/Proton_2023/opticsfile.23"
 d_config_mad["ver_hllhc_optics"] = None
 d_config_mad["ver_lhc_run"] = 3.0
 
@@ -173,7 +176,7 @@ filling_scheme_path = os.path.abspath(
 # Unfortunately, the format is not the same as the one used by defaults in xmask, but it should
 # still be converted in the lines below (see with matteo.rufolo@cern.ch for questions, or if it
 # doesn't work).
-
+# %%
 # Load filling scheme
 if filling_scheme_path.endswith(".json"):
     with open(filling_scheme_path, "r") as fid:
@@ -288,8 +291,8 @@ dump_config_in_collider = False
 # optimal DA (e.g. tune, chroma, etc).
 # ==================================================================================================
 # Scan tune with step of 0.001 (need to round to correct for numpy numerical instabilities)
-array_qx = np.round(np.arange(62.305, 62.330, 0.001), decimals=4)[:5]
-array_qy = np.round(np.arange(60.305, 60.330, 0.001), decimals=4)[:5]
+array_qx = np.round(np.arange(62.305, 62.330, 0.001), decimals=4)[:1]
+array_qy = np.round(np.arange(60.305, 60.330, 0.001), decimals=4)[:1]
 
 # In case one is doing a tune-tune scan, to decrease the size of the scan, we can ignore the
 # working points too close to resonance. Otherwise just delete this variable in the loop at the end
@@ -340,7 +343,7 @@ for idx_job, (track, qx, qy) in enumerate(itertools.product(track_array, array_q
         d_config_collider["config_knobs_and_tuning"]["qy"][beam] = float(qy)
 
     # Complete the dictionnary for the tracking
-    d_config_simulation["particle_file"] = f"../particles/{track:02}.parquet"
+    d_config_simulation["particle_file"] = f"../particles_new/{track:02}.parquet"
     d_config_simulation["collider_file"] = f"../collider/collider.json"
 
     # Add a child to the second generation, with all the parameters for the collider and tracking
@@ -362,7 +365,7 @@ config = yaml.safe_load(open("config.yaml"))
 config["root"]["children"] = children
 
 # Set miniconda environment path in the config
-config["root"]["setup_env_script"] = os.getcwd() + "/../activate_miniforge.sh"
+config["root"]["setup_env_script"] = "/afs/cern.ch/work/a/aradosla/private/miniforge3/bin/activate"
 
 
 # Recursively define the context for the simulations
@@ -374,7 +377,7 @@ def set_context(children, idx_gen, config):
 
 
 set_context(children, 1, config)
-
+# %%
 # ==================================================================================================
 # --- Build tree and write it to the filesystem
 # ==================================================================================================
@@ -410,3 +413,5 @@ start_time = time.time()
 root.make_folders(generate_run)
 print("The tree folders are ready.")
 print("--- %s seconds ---" % (time.time() - start_time))
+
+# %%
