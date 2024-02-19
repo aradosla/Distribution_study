@@ -44,6 +44,7 @@ master_study/master_jobs/1_build_distr_and_collider/temp/
 master_study/master_jobs/2_configure_and_track/*.log
 master_study/master_jobs/2_configure_and_track/correction/
 master_study/master_jobs/2_configure_and_track/*.parquet
+master_study/master_jobs/2_configure_and_track/collider.json
 
 #vscode config
 .vscode/
