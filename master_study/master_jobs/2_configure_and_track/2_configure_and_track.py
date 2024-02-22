@@ -592,11 +592,13 @@ def track(collider, particles, config_sim, save_input_particles=False):
     # Track
     num_turns = config_sim["n_turns"]
     a = time.time()
-    collider[beam].track(particles, turn_by_turn_monitor=False, num_turns=num_turns)         # tracking of the distribution 
+    collider[beam].track(particles, turn_by_turn_monitor=True, num_turns=num_turns)         # tracking of the distribution 
+    particles = collider[beam].record_last_track
     b = time.time()
 
+    
     print(f"Elapsed time: {b-a} s")
-    print(f"Elapsed time per particle per turn: {(b-a)/particles._capacity/num_turns*1e6} us")
+    #print(f"Elapsed time per particle per turn: {(b-a)/particles._capacity/num_turns*1e6} us")
 
     return particles
 
@@ -630,18 +632,23 @@ def configure_and_track(config_path="config.yaml"):
         collider.build_trackers(_context=context)
 
     # Prepare particle distribution
-    particles, particle_id = prepare_particle_distribution(collider, context, config_sim)
+    print('Now preparing distribution!')
 
+    particles, particle_id = prepare_particle_distribution(collider, context, config_sim)
+    
     # Track
+    print('Now tracking!')
     particles = track(collider, particles, config_sim)
 
     # Get particles dictionnary
     particles_dict = particles.to_dict()
-    particles_dict["particle_id"] = particle_id
+    #particles_dict["particle_id"] = particle_id
 
     # Save output
-    pd.DataFrame(particles_dict).to_parquet("output_particles_new.parquet")
 
+
+    pd.DataFrame(particles_dict['data']).to_parquet("output_particles_new.parquet")
+    print('The parquet should be saved')
     # Remote the correction folder, and potential C files remaining
     try:
         os.system("rm -rf correction")

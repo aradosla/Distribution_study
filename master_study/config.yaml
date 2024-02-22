@@ -19,7 +19,7 @@
       files_to_clone:
         - misc.py
       context: "cpu" # 'cupy' # opencl # how to run the simulation
-      run_on: "htc_docker" # 'local_pc' # 'htc_docker' #'htc' #'slurm' #'slurm_docker'
+      run_on: "htc" # 'local_pc' # 'htc_docker' #'htc' #'slurm' #'slurm_docker'
       # Following parameter is ignored when run_on is not htc or htc_docker
       htc_job_flavor: "microcentury" # optional parameter to define job flavor, default is espresso
       # Following parameter is ignored when run_on is not htc_docker or slurm_docker
