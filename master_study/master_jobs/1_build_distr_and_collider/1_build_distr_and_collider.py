@@ -70,8 +70,179 @@ def load_configuration(config_path="config.yaml"):
 
 
 # START NEW
+'''
+def parameters(n_particles, sigma_d):
+    
+    n_part = n_particles
+    
+    x  = np.zeros(n_part)
+    px = np.zeros(n_part)
+    y  = np.zeros(n_part)
+    py = np.zeros(n_part)
+    z = np.zeros(n_part)
 
-def build_particle_distribution(config_particles, collider):
+    dp = np.random.uniform(0.1*sigma_d,3.1*sigma_d,n_part)
+    return  x, px, y, py, z, dp
+
+
+def cmp_weights(df):
+    
+    r2 = df['x']**2 + df['px']**2 + df['y']**2 + df['py']**2
+    w = np.exp(-r2/2.)
+    #r2_l = df['z']**2 + df['dp']**2
+    #w *=np.exp(r2_l/2.)
+    w/=np.sum(w)
+    return w
+
+
+def generate_pseudoKV_xpyp(i, config_particles):
+  not_generated = True
+  n_part = config_particles['N_particles']
+  sigma_z = config_particles['sigma_z']
+  n_sigma = config_particles['n_sigma']
+  x, px, y, py, z, dp = parameters(n_part, sigma_z)
+  while not_generated:
+    u = np.random.normal(size=4)
+    r = np.sqrt(np.sum(u**2))
+    u *= n_sigma/r
+    v = np.random.normal(size=4)
+    r = np.sqrt(np.sum(v**2))
+    v *= n_sigma/r
+    R2 = u[0]**2 + u[1]**2 + v[0]**2 + v[1]**2
+    if R2 <= n_sigma**2:
+        x[i]  = u[0]
+        px[i] = u[1]
+        y[i]  = v[0]
+        py[i] = v[1]
+        not_generated = False
+  return x, y, px, py, z, dp
+
+
+def df_colored_func(n_part):
+    n_sigma, x, px, y, py, z, dp = parameters(n_part)
+    list(map(generate_pseudoKV_xpyp, range(n_part)))
+    df = pd.DataFrame({'x': x , 'y': y, 'px': px, 'py': py, 'z': z, 'dp': dp})
+    df['weights'] = cmp_weights(df)
+    return df
+
+# =================================================================================================================================
+# Colored gaussian
+def generate_matched_gaussian_bunch_colored(num_particles,
+                                    nemitt_x, nemitt_y, sigma_z,
+                                    total_intensity_particles=None,
+                                    particle_on_co=None,
+                                    R_matrix=None,
+                                    circumference=None,
+                                    momentum_compaction_factor=None,
+                                    rf_harmonic=None,
+                                    rf_voltage=None,
+                                    rf_phase=None,
+                                    p_increment=0.,
+                                    tracker=None,
+                                    line=None,
+                                    particle_ref=None,
+                                    particles_class=None,
+                                    engine=None,
+                                    _context=None, _buffer=None, _offset=None,
+                                    **kwargs, # They are passed to build_particles
+                                    ):
+
+    """
+    Generate a matched Gaussian bunch.
+
+    Parameters
+    ----------
+    line : xpart.Line
+        Line for which the bunch is generated.
+    num_particles : int
+        Number of particles to be generated.
+    nemitt_x : float
+        Normalized emittance in the horizontal plane (in m rad).
+    nemitt_y : float
+        Normalized emittance in the vertical plane (in m rad).
+    sigma_z : float
+        RMS bunch length in meters.
+    total_intensity_particles : float
+        Total intensity of the bunch in particles.
+
+    Returns
+    -------
+    part : xpart.Particles
+        Particles object containing the generated particles.
+
+    """
+
+    if line is not None and tracker is not None:
+        raise ValueError(
+            'line and tracker cannot be provided at the same time.')
+
+    if tracker is not None:
+        print(
+            "The argument tracker is deprecated. Please use line instead.",
+            DeprecationWarning)
+        line = tracker.line
+
+    if line is not None:
+        assert line.tracker is not None, ("The line has no tracker. Please use "
+                                          "`Line.build_tracker()`")
+
+    if (particle_ref is not None and particle_on_co is not None):
+        raise ValueError("`particle_ref` and `particle_on_co`"
+                " cannot be provided at the same time")
+
+    if particle_ref is None:
+        if particle_on_co is not None:
+            particle_ref = particle_on_co
+        elif line is not None and line.particle_ref is not None:
+            particle_ref = line.particle_ref
+        else:
+            raise ValueError(
+                "`line`, `particle_ref` or `particle_on_co` must be provided!")
+
+    zeta, delta = xp.generate_longitudinal_coordinates(
+            distribution='gaussian',
+            num_particles=num_particles,
+            particle_ref=(particle_ref if particle_ref is not None
+                          else particle_on_co),
+            line=line,
+            circumference=circumference,
+            momentum_compaction_factor=momentum_compaction_factor,
+            rf_harmonic=rf_harmonic,
+            rf_voltage=rf_voltage,
+            rf_phase=rf_phase,
+            p_increment=p_increment,
+            sigma_z=sigma_z,
+            engine=engine,
+            **kwargs)
+
+    assert len(zeta) == len(delta) == num_particles
+    df_colored = df_colored_func(num_particles)
+    x_norm = df_colored['x'].values
+    px_norm = df_colored['px'].values
+    y_norm = df_colored['y'].values
+    py_norm = df_colored['py'].values
+
+    if total_intensity_particles is None:
+        # go to particles.weight = 1
+        total_intensity_particles = num_particles
+
+
+    part = xp.build_particles(_context=_context, _buffer=_buffer, _offset=_offset,
+                      R_matrix=R_matrix,
+                      particles_class=particles_class,
+                      particle_on_co=particle_on_co,
+                      particle_ref=(
+                          particle_ref if particle_on_co is  None else None),
+                      line=line,
+                      zeta=zeta, delta=delta,
+                      x_norm=x_norm, px_norm=px_norm,
+                      y_norm=y_norm, py_norm=py_norm,
+                      nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+                      weight=total_intensity_particles/num_particles,
+                      **kwargs)
+    return part
+
+def build_particle_distribution(config_mad, config_particles, collider):
     # Define radius distribution
     #r_min = config_particles["r_min"]
     #r_max = config_particles["r_max"]
@@ -84,15 +255,64 @@ def build_particle_distribution(config_particles, collider):
     # Define angle distribution
     #n_angles = config_particles["n_angles"]
     #theta_list = np.linspace(0, 90, n_angles + 2)[1:-1]
-    N_particles = 10000
+    N_particles = config_particles['N_particles'] #int(1e6)
+
+
+    bunch_intensity = config_particles['bunch_intensity']
+    normal_emitt_x = config_particles['norm_emitt_x'] #m*rad
+    normal_emitt_y = config_particles['norm_emitt_y'] #m*rad
+    sigma_z = config_particles['sigma_z']
+
+    particle_ref = xp.Particles(
+                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=config_mad['beam_config']['lhcb1']['beam_energy_tot'])
+    gaussian_bunch = generate_matched_gaussian_bunch_colored(
+            num_particles = N_particles, total_intensity_particles = bunch_intensity,
+            nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
+            particle_ref = particle_ref,
+            line = collider['lhcb1'])
+    # Define particle distribution as a cartesian product of the above
+    particle_list = [
+        (particle_id, x, y, px, py, zeta, delta)
+        for particle_id, (x, y, px, py, zeta, delta) in enumerate(zip(gaussian_bunch.x, gaussian_bunch.y, gaussian_bunch.px, gaussian_bunch.py, gaussian_bunch.zeta, gaussian_bunch.delta))
+    ]
+    print('first',particle_list)
+    # Split distribution into several chunks for parallelization
+    n_split = config_particles['n_split']
+    particle_list = np.array(np.array_split(particle_list, n_split))
+    array_of_lists = np.array([arr.tolist() for arr in particle_list])
+    particle_list = array_of_lists
+    print('second',particle_list)
+
+    # Return distribution
+    return particle_list
+
+''' 
+# ============================================================================================================
+# Gaussian!!! Rewrite to change the distribution as a variable
+
+def build_particle_distribution(config_mad, config_particles, collider):
+    # Define radius distribution
+    #r_min = config_particles["r_min"]
+    #r_max = config_particles["r_max"]
+    #n_r = config_particles["n_r"]
+    #radial_list = np.linspace(r_min, r_max, n_r, endpoint=False)
+
+    # Filter out particles with low and high amplitude to accelerate simulation
+    # radial_list = radial_list[(radial_list >= 4.5) & (radial_list <= 7.5)]
+
+    # Define angle distribution
+    #n_angles = config_particles["n_angles"]
+    #theta_list = np.linspace(0, 90, n_angles + 2)[1:-1]
+    N_particles = int(50000) #int(1e6)
 
 
     bunch_intensity = 2.2e11
-    normal_emitt_x = 2.5e-6 #m*rad
-    normal_emitt_y = 2.5e-6 #m*rad
-    sigma_z = 7.5e-2 
+    normal_emitt_x = 2.2e-6 #m*rad
+    normal_emitt_y = 2.2e-6 #m*rad
+    sigma_z = 7.5e-2
     particle_ref = xp.Particles(
                         mass0=xp.PROTON_MASS_EV, q0=1, energy0=7000e9)
+    #config_mad['beam_config']['lhcb1']['beam_energy_tot'])
     gaussian_bunch = xp.generate_matched_gaussian_bunch(
             num_particles = N_particles, total_intensity_particles = bunch_intensity,
             nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
@@ -249,7 +469,7 @@ def build_distr_and_collider(config_file="config.yaml"):
     collider = activate_RF_and_twiss(collider, config_mad, context, sanity_checks)
     
     # Build particle distribution
-    particle_list = build_particle_distribution(config_particles, collider)
+    particle_list = build_particle_distribution(config_mad, config_particles, collider)
 
     # Write particle distribution to file
     write_particle_distribution(particle_list)
@@ -272,4 +492,4 @@ def build_distr_and_collider(config_file="config.yaml"):
 if __name__ == "__main__":
     build_distr_and_collider()
 
-# %%
+ # %%

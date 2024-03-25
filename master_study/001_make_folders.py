@@ -40,7 +40,7 @@ d_config_particles["n_r"] = 2 * 16 * (d_config_particles["r_max"] - d_config_par
 d_config_particles["n_angles"] = 5
 
 # Number of split for parallelization
-d_config_particles["n_split"] = 5
+d_config_particles["n_split"] = 5000
 
 # ==================================================================================================
 # --- Optics collider parameters (generation 1)
@@ -90,8 +90,8 @@ d_config_tune_and_chroma = {
     "dqy": {},
 }
 for beam in ["lhcb1", "lhcb2"]:
-    d_config_tune_and_chroma["qx"][beam] = 62.31
-    d_config_tune_and_chroma["qy"][beam] = 60.32
+    d_config_tune_and_chroma["qx"][beam] = 62.32 #62.305
+    d_config_tune_and_chroma["qy"][beam] = 60.31 #60.315
     d_config_tune_and_chroma["dqx"][beam] = 15.0
     d_config_tune_and_chroma["dqy"][beam] = 15.0
 
@@ -267,7 +267,7 @@ d_config_collider["config_beambeam"] = d_config_beambeam
 d_config_simulation = {}
 
 # Number of turns to track
-d_config_simulation["n_turns"] = 200
+d_config_simulation["n_turns"] = 1000
 
 # Initial off-momentum
 d_config_simulation["delta_max"] = 27.0e-5
@@ -291,8 +291,9 @@ dump_config_in_collider = False
 # optimal DA (e.g. tune, chroma, etc).
 # ==================================================================================================
 # Scan tune with step of 0.001 (need to round to correct for numpy numerical instabilities)
-array_qx = np.round(np.arange(62.305, 62.330, 0.001), decimals=4)[:1]
-array_qy = np.round(np.arange(60.305, 60.330, 0.001), decimals=4)[:1]
+array_qx = [62.31]#np.round(np.arange(62.305, 62.330, 0.001), decimals=4)[:1]
+#array_qy = np.round(np.arange(60.305, 60.330, 0.001), decimals=4)[:1]
+array_qy = [60.32]#np.round(np.arange(60.315, 60.330, 0.001), decimals=4)[:1]
 
 # In case one is doing a tune-tune scan, to decrease the size of the scan, we can ignore the
 # working points too close to resonance. Otherwise just delete this variable in the loop at the end
@@ -365,8 +366,8 @@ config = yaml.safe_load(open("config.yaml"))
 config["root"]["children"] = children
 
 # Set miniconda environment path in the config
-config["root"]["setup_env_script"] = "/afs/cern.ch/work/a/aradosla/private/miniforge3/bin/activate"
-
+#config["root"]["setup_env_script"] = "/afs/cern.ch/work/a/aradosla/private/miniforge3/bin/activate"
+config["root"]["setup_env_script"] = "/afs/cern.ch/work/a/aradosla/private/example_DA_study_mine/miniforge/bin/activate"
 
 # Recursively define the context for the simulations
 def set_context(children, idx_gen, config):

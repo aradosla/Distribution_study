@@ -9,7 +9,7 @@
       run_on: "local_pc" # "local_pc" 'htc_docker' #'htc' #'slurm' #'slurm_docker'
       context: "cpu" # 'cupy' # opencl # how to run the simulation
       # Following parameter is ignored when run_on is not htc or htc_docker
-      htc_job_flavor: "espresso" # optional parameter to define job flavor, default is espresso
+      htc_job_flavor: "workday"  #"espresso" # optional parameter to define job flavor, default is espresso
       # Following parameter is ignored when run_on is not htc_docker or slurm_docker
       singularity_image: "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cdroin/da-study-docker:1afb04d3" #../da-study-docker_1afb04d3.sif
 
@@ -21,7 +21,7 @@
       context: "cpu" # 'cupy' # opencl # how to run the simulation
       run_on: "htc" # 'local_pc' # 'htc_docker' #'htc' #'slurm' #'slurm_docker'
       # Following parameter is ignored when run_on is not htc or htc_docker
-      htc_job_flavor: "microcentury" # optional parameter to define job flavor, default is espresso
+      htc_job_flavor: "workday" #"microcentury" # optional parameter to define job flavor, default is espresso
       # Following parameter is ignored when run_on is not htc_docker or slurm_docker
       singularity_image: "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cdroin/da-study-docker:1afb04d3" #../da-study-docker_1afb04d3.sif
 

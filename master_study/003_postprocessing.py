@@ -1,6 +1,5 @@
 # %%
 
-
 # ==================================================================================================
 # --- Imports
 # ==================================================================================================
@@ -50,7 +49,7 @@ for node in root.generation(1):
             except:
                 particle = pd.read_parquet(f"{config_child['config_simulation']['particle_file']}")
 
-            df_sim = pd.read_parquet(f"{node_child.get_abs_path()}/output_particles.parquet")
+            df_sim = pd.read_parquet(f"{node_child.get_abs_path()}/output_particles_new.parquet")
 
         except Exception as e:
             print(e)
@@ -106,7 +105,7 @@ for node in root.generation(1):
 # ==================================================================================================
 # --- # Merge all jobs outputs in one dataframe and save it
 # ==================================================================================================
-
+# %%
 # Merge the dataframes from all simulations together
 df_all_sim = pd.concat(l_df_to_merge)
 
@@ -116,7 +115,16 @@ df_lost_particles = df_all_sim[df_all_sim["state"] != 1]  # Lost particles
 # Check if the dataframe is empty
 if df_lost_particles.empty:
     print("No unstable particles found, the output dataframe will be empty.")
+my_final = df_all_sim
+my_final.to_parquet(f"scans/{study_name}/da.parquet")
+print('Particle_id', df_all_sim['particle_id'])
+print("Final dataframe for current set of simulations: ", my_final)
 
+end = time.time()
+
+print("Elapsed time: ", end - start)
+quit()
+# %%
 # Group by working point (Update this with the knobs you want to group by !)
 group_by_parameters = ["name base collider", "qx", "qy"]
 # We always want to keep beam in the final result

@@ -3,7 +3,14 @@ config_particles:
   r_max: 10.0
   n_r: 256
   n_angles: 5
-  n_split: 15
+  n_split: 5000
+  norm_emitt_x: 2.2e-6             # it has to be the same as in the config for the second script
+  norm_emitt_y: 2.2e-6
+  N_particles: int(5e4)
+  bunch_intensity: 2.2e11
+  sigma_z: 7.5e-2 
+  n_sigma: 6.0
+
 
 config_mad:
   # Links to be made for tools and scripts
