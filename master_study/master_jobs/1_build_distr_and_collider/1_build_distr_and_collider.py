@@ -70,62 +70,58 @@ def load_configuration(config_path="config.yaml"):
 
 
 # START NEW
-'''
-def parameters(n_particles, sigma_d):
-    
-    n_part = n_particles
-    
-    x  = np.zeros(n_part)
+
+def parameters(n_part):
+    #n_sigma = 6.0
+    n_sigma = 5.0
+    x = np.zeros(n_part)
     px = np.zeros(n_part)
-    y  = np.zeros(n_part)
+    y = np.zeros(n_part)
     py = np.zeros(n_part)
     z = np.zeros(n_part)
 
-    dp = np.random.uniform(0.1*sigma_d,3.1*sigma_d,n_part)
-    return  x, px, y, py, z, dp
-
+    #sigma_d = 7.5e-2
+    sigma_d = 7.5e-4
+    dp = np.random.uniform(0.1 * sigma_d, 3.1 * sigma_d, n_part)
+    return n_sigma, x, px, y, py, z, dp
 
 def cmp_weights(df):
-    
     r2 = df['x']**2 + df['px']**2 + df['y']**2 + df['py']**2
     w = np.exp(-r2/2.)
-    #r2_l = df['z']**2 + df['dp']**2
-    #w *=np.exp(r2_l/2.)
-    w/=np.sum(w)
+    w /= np.sum(w)
     return w
 
-
-def generate_pseudoKV_xpyp(i, config_particles):
-  not_generated = True
-  n_part = config_particles['N_particles']
-  sigma_z = config_particles['sigma_z']
-  n_sigma = config_particles['n_sigma']
-  x, px, y, py, z, dp = parameters(n_part, sigma_z)
-  while not_generated:
-    u = np.random.normal(size=4)
-    r = np.sqrt(np.sum(u**2))
-    u *= n_sigma/r
-    v = np.random.normal(size=4)
-    r = np.sqrt(np.sum(v**2))
-    v *= n_sigma/r
-    R2 = u[0]**2 + u[1]**2 + v[0]**2 + v[1]**2
-    if R2 <= n_sigma**2:
-        x[i]  = u[0]
-        px[i] = u[1]
-        y[i]  = v[0]
-        py[i] = v[1]
-        not_generated = False
-  return x, y, px, py, z, dp
-
+def generate_pseudoKV_xpyp(n_sigma):
+    not_generated = True
+    while not_generated:
+        u = np.random.normal(size=4)
+        r = np.sqrt(np.sum(u**2))
+        u *= n_sigma / r
+        v = np.random.normal(size=4)
+        r = np.sqrt(np.sum(v**2))
+        v *= n_sigma / r
+        R2 = u[0]**2 + u[1]**2 + v[0]**2 + v[1]**2
+        if R2 <= n_sigma**2:
+            return u[0], u[1], v[0], v[1]
 
 def df_colored_func(n_part):
     n_sigma, x, px, y, py, z, dp = parameters(n_part)
-    list(map(generate_pseudoKV_xpyp, range(n_part)))
-    df = pd.DataFrame({'x': x , 'y': y, 'px': px, 'py': py, 'z': z, 'dp': dp})
+    pseudo_results = [generate_pseudoKV_xpyp(n_sigma) for _ in range(n_part)]
+    
+    for i, result in enumerate(pseudo_results):
+        x[i], px[i], y[i], py[i] = result
+    df = pd.DataFrame({'x': x, 'y': y, 'px': px, 'py': py, 'z': z, 'dp': dp})
     df['weights'] = cmp_weights(df)
+    print(df)
     return df
 
+
+
+
+
+ # %%
 # =================================================================================================================================
+
 # Colored gaussian
 def generate_matched_gaussian_bunch_colored(num_particles,
                                     nemitt_x, nemitt_y, sigma_z,
@@ -216,7 +212,9 @@ def generate_matched_gaussian_bunch_colored(num_particles,
             **kwargs)
 
     assert len(zeta) == len(delta) == num_particles
+
     df_colored = df_colored_func(num_particles)
+
     x_norm = df_colored['x'].values
     px_norm = df_colored['px'].values
     y_norm = df_colored['y'].values
@@ -229,7 +227,7 @@ def generate_matched_gaussian_bunch_colored(num_particles,
 
     part = xp.build_particles(_context=_context, _buffer=_buffer, _offset=_offset,
                       R_matrix=R_matrix,
-                      particles_class=particles_class,
+                      #particles_class=particles_class,
                       particle_on_co=particle_on_co,
                       particle_ref=(
                           particle_ref if particle_on_co is  None else None),
@@ -240,7 +238,17 @@ def generate_matched_gaussian_bunch_colored(num_particles,
                       nemitt_x=nemitt_x, nemitt_y=nemitt_y,
                       weight=total_intensity_particles/num_particles,
                       **kwargs)
-    return part
+    return part, df_colored['weights']
+
+def write_particle_distribution(particle_list):
+    # Write distribution to parquet files
+    distributions_folder = "particles_new"
+    os.makedirs(distributions_folder, exist_ok=True)
+    for idx_chunk, my_list in enumerate(particle_list):
+        pd.DataFrame(
+            my_list,
+            columns=["particle_id", "x", "y", "px", "py", "zeta", "delta", "cmp_weights"],
+        ).to_parquet(f"{distributions_folder}/{idx_chunk:02}.parquet")
 
 def build_particle_distribution(config_mad, config_particles, collider):
     # Define radius distribution
@@ -255,25 +263,29 @@ def build_particle_distribution(config_mad, config_particles, collider):
     # Define angle distribution
     #n_angles = config_particles["n_angles"]
     #theta_list = np.linspace(0, 90, n_angles + 2)[1:-1]
-    N_particles = config_particles['N_particles'] #int(1e6)
+    #N_particles = config_particles['N_particles'] #int(1e6)
+    N_particles = int(50000)
+    bunch_intensity = 2.2e11
+    normal_emitt_x = 2.2e-6 #m*rad
+    normal_emitt_y = 2.2e-6 #m*rad
+    sigma_z = 7.5e-2
 
-
-    bunch_intensity = config_particles['bunch_intensity']
-    normal_emitt_x = config_particles['norm_emitt_x'] #m*rad
-    normal_emitt_y = config_particles['norm_emitt_y'] #m*rad
-    sigma_z = config_particles['sigma_z']
+    #bunch_intensity = config_particles['bunch_intensity']
+    #normal_emitt_x = config_particles['norm_emitt_x'] #m*rad
+    #normal_emitt_y = config_particles['norm_emitt_y'] #m*rad
+    #sigma_z = config_particles['sigma_z']
 
     particle_ref = xp.Particles(
-                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=config_mad['beam_config']['lhcb1']['beam_energy_tot'])
-    gaussian_bunch = generate_matched_gaussian_bunch_colored(
+                        mass0=xp.PROTON_MASS_EV, q0=1, energy0=7000e9) #config_mad['beam_config']['lhcb1']['beam_energy_tot'])
+    gaussian_bunch, weights = generate_matched_gaussian_bunch_colored(
             num_particles = N_particles, total_intensity_particles = bunch_intensity,
             nemitt_x = normal_emitt_x, nemitt_y=normal_emitt_y, sigma_z = sigma_z,
             particle_ref = particle_ref,
             line = collider['lhcb1'])
     # Define particle distribution as a cartesian product of the above
     particle_list = [
-        (particle_id, x, y, px, py, zeta, delta)
-        for particle_id, (x, y, px, py, zeta, delta) in enumerate(zip(gaussian_bunch.x, gaussian_bunch.y, gaussian_bunch.px, gaussian_bunch.py, gaussian_bunch.zeta, gaussian_bunch.delta))
+        (particle_id, x, y, px, py, zeta, delta, cmp_weights)
+        for particle_id, (x, y, px, py, zeta, delta, cmp_weights) in enumerate(zip(gaussian_bunch.x, gaussian_bunch.y, gaussian_bunch.px, gaussian_bunch.py, gaussian_bunch.zeta, gaussian_bunch.delta, weights))
     ]
     print('first',particle_list)
     # Split distribution into several chunks for parallelization
@@ -286,10 +298,10 @@ def build_particle_distribution(config_mad, config_particles, collider):
     # Return distribution
     return particle_list
 
-''' 
+ 
 # ============================================================================================================
 # Gaussian!!! Rewrite to change the distribution as a variable
-
+'''
 def build_particle_distribution(config_mad, config_particles, collider):
     # Define radius distribution
     #r_min = config_particles["r_min"]
@@ -344,7 +356,7 @@ def write_particle_distribution(particle_list):
             columns=["particle_id", "x", "y", "px", "py", "zeta", "delta"],
         ).to_parquet(f"{distributions_folder}/{idx_chunk:02}.parquet")
 
-
+'''
 
 # END NEW
 
@@ -401,7 +413,10 @@ def build_collider_from_mad(config_mad, context, sanity_checks=True):
     if sanity_checks:
         collider["lhcb1"].twiss(method="4d")
         collider["lhcb2"].twiss(method="4d")
-    # Return collider
+        #collider["lhcb1"].twiss()
+        #collider["lhcb2"].twiss()
+
+   # Return collider
     return collider
 
 
